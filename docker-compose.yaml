@@ -1,0 +1,52 @@
+version: '3.8'
+services:
+  mongodb:
+    image: 
+    volumes:
+      - data:/data/db
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: max 
+    #   MONGO_INITDB_ROOT_PASSWORD: secret
+      # - MONGO_INITDB_ROOT_PASSWORD=secret
+    #直接赋值，或引用文件设置的环境变量
+    env_file:
+      - ./env/mongo.env
+    # networks:
+      # - goals-net
+    #通过同一个docker compose设置的container会默认归入同一个网络
+    
+  backend:
+    build: ./backend
+    # build: 
+    #   context: ./backend
+    #   dockerfile: Dockerfile
+    #dockerfile针对context设置的路径，如果实际的Dockerfile需要访问上层路径的文件，则context也需要涵盖
+    ports:
+      - '80:80'
+    volumes:
+      - logs:/app/logs
+      - /app/node_modules
+      - ./backend:/app
+      #添加bind mount时使用相对docker-compose文件的路径
+    env_file:
+      - ./env/backend.env
+    depends_on:
+      - mongodb
+      #控制生成顺序
+  
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend/src:/app/src
+    stdin_open: true
+    tty: true
+    #stdin_open 与tty 结合相当于 --it，用来控制与terminal交互
+    depends_on:
+      - backend
+
+volumes:
+  data:
+  logs:
+#命名volume需要在文件中声明
